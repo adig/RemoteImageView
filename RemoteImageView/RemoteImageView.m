@@ -40,7 +40,6 @@
 
 #define IMAGE_CACHE_DIRECTORY @"RemoteImageViewCache"
 
-
 @interface RemoteImageView(){
     UIActivityIndicatorView *_activityIndicator;
 }
