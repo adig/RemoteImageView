@@ -73,6 +73,21 @@ You can invalidate the disk cache by calling :
 	
 	[RemoteImageView clearDiskCache];
 
+#Custom Image Resizing
+You can fully customize the loaded image before displaying it by using the `imageResizeBlock` property. If the property is not set the default image resize mode is used (scale, crop and center). 
+
+**Note** : This property is ignored if `resizeImage` is set to `NO`
+
+Example (let's say you have an `UIImage` category that implements the `resizedImage:(CGSize)size` method ) : 
+
+	RemoteImageView *imageView = [[RemoteImageView alloc] initWithFrame:CGRectMake(100, 100, 100, 100)];
+	imageView.imageResizeBlock = ^(UIImage *input, UIImage **output) {
+        UIImage *resized = [input resizedImage:imageView.frame.size];
+        *output = resized;
+    };
+	imageView.imageURL = [NSURL URLWithString:@"http://farm9.staticflickr.com/8025/7260272478_95198c7452_z.jpg"];
+	[self.view addSubview:imageView];
+	
 
 #TODO 
 * cancel functionality

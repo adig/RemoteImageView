@@ -57,9 +57,10 @@
 @synthesize showActivityIndicator = _showActivityIndicator;
 @synthesize activityIndicatorStyle = _activityIndicatorStyle;
 @synthesize resizeImage = _resizeImage;
+@synthesize animate = _animate;
 @synthesize completeBlock = _completeBlock;
 @synthesize errorBlock = _errorBlock;
-@synthesize animate = _animate;
+@synthesize imageResizeBlock = _imageResizeBlock;
 
 - (id)init {
     
@@ -152,8 +153,19 @@
             resultImage = [[UIImage alloc] initWithData:result];
             
             if(_resizeImage) {
-                resultImage = [resultImage imageByScalingAndCroppingForSize:CGSizeMake(self.frame.size.width, 
-                                                                                       self.frame.size.height)];
+                
+                UIImage *resizedImage;
+                
+                if(_imageResizeBlock) {
+                    
+                    _imageResizeBlock(resultImage, &resizedImage);
+                    
+                } else {
+                    resizedImage = [resultImage imageByScalingAndCroppingForSize:CGSizeMake(self.frame.size.width, 
+                                                                                           self.frame.size.height)];
+                }
+                
+                resultImage = resizedImage;
             }
             
             [self announceSuccess:resultImage forURL:imageURL];

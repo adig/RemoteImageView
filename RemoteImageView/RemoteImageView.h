@@ -34,16 +34,20 @@
 
 typedef void (^imageLoadCompleteBlock_t)(UIImage *image);
 typedef void (^imageLoadErrorBlock_t)(NSError *error);
+typedef void (^imageResizeBlock_t)(UIImage *inputImage, UIImage **outputImage);
 
 @interface RemoteImageView : UIImageView
 
 @property (nonatomic, strong) NSURL *imageURL;
 @property (nonatomic, assign) BOOL showActivityIndicator;
 @property (nonatomic, assign) UIActivityIndicatorViewStyle activityIndicatorStyle;
+@property (nonatomic, assign) BOOL animate;
 @property (nonatomic, assign) BOOL resizeImage;
+
 @property (nonatomic, strong) imageLoadCompleteBlock_t completeBlock;
 @property (nonatomic, strong) imageLoadErrorBlock_t errorBlock;
-@property (nonatomic, assign) BOOL animate;
+@property (nonatomic, strong) imageResizeBlock_t imageResizeBlock;
+
 
 /**
  Starts loading the URL provided right away and calls the result blocks on finish
