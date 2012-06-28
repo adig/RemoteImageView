@@ -51,6 +51,8 @@
 - (UIImage*)imageByScalingAndCroppingForSize:(CGSize)targetSize;
 @end
 
+static UIImage *_globalDefaultImage;
+
 @implementation RemoteImageView
 
 @synthesize imageURL = _imageURL;
@@ -120,6 +122,8 @@
     self.image = nil;
     _imageURL = imageURL;
     
+    if(!imageURL) return;
+    
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
         
         NSString *imagePath = [RemoteImageView pathForURL:imageURL 
@@ -152,6 +156,10 @@
             
             resultImage = [[UIImage alloc] initWithData:result];
             
+            if(!resultImage && _globalDefaultImage) {
+                resultImage = _globalDefaultImage;
+            }
+            
             if(_resizeImage) {
                 
                 UIImage *resizedImage;
@@ -166,7 +174,7 @@
                 }
                 
                 resultImage = resizedImage;
-            }
+            } 
             
             [self announceSuccess:resultImage forURL:imageURL];
             [self cacheImage:resultImage forURL:imageURL];
@@ -219,6 +227,10 @@
     dispatch_async(dispatch_get_main_queue(), ^{
         
         [self stopActivityIndicator];
+        
+        if(_globalDefaultImage) {
+            self.image = _globalDefaultImage;
+        }
         
         if(_errorBlock)  
             _errorBlock(error);
@@ -312,7 +324,20 @@
     }
 }
 
+#pragma mark Global Default image
+
++ (void)setDefaultGlobalImage:(UIImage *)image {
+    
+    _globalDefaultImage = image;
+}
+
++(UIImage *)defaultGlobalImage  {
+    
+    return _globalDefaultImage;
+}
+
 @end
+
 
 #pragma mark UIImage resize Additions
 

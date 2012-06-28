@@ -64,4 +64,7 @@ typedef void (^imageResizeBlock_t)(UIImage *inputImage, UIImage **outputImage);
  */
 + (void) clearDiskCache;
 
++ (UIImage *)defaultGlobalImage;
++ (void)setDefaultGlobalImage:(UIImage *)image;
+
 @end
