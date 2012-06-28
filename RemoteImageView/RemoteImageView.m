@@ -31,6 +31,8 @@
 
 #import "RemoteImageView.h"
 #import <CommonCrypto/CommonHMAC.h>
+#import <QuartzCore/QuartzCore.h>
+
 
 #define UIViewAutoresizingFlexibleMargins           \
         UIViewAutoresizingFlexibleBottomMargin    | \
@@ -42,6 +44,8 @@
 
 @interface RemoteImageView(){
     UIActivityIndicatorView *_activityIndicator;
+    NSBlockOperation *_loadingOperation;
+    CALayer *_imageLayer;
 }
 @end
 
@@ -52,6 +56,7 @@
 @end
 
 static UIImage *_globalDefaultImage;
+static NSOperationQueue *_imageLoadingQueue;
 
 @implementation RemoteImageView
 
@@ -63,6 +68,13 @@ static UIImage *_globalDefaultImage;
 @synthesize completeBlock = _completeBlock;
 @synthesize errorBlock = _errorBlock;
 @synthesize imageResizeBlock = _imageResizeBlock;
+
++ (void)initialize {
+  
+    _imageLoadingQueue = [[NSOperationQueue alloc] init];
+    _imageLoadingQueue.maxConcurrentOperationCount = 20;
+    
+}
 
 - (id)init {
     
@@ -119,27 +131,33 @@ static UIImage *_globalDefaultImage;
 
 - (void)setImageURL:(NSURL *)imageURL {
     
+    [self cancel];
+    
     self.image = nil;
+    _imageLayer.contents = nil;
     _imageURL = imageURL;
     
     if(!imageURL) return;
     
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+    [self startActivityIndicator];
+    
+    NSBlockOperation *operation = [[NSBlockOperation alloc] init];
+    __unsafe_unretained NSBlockOperation *weakOperation = operation;
+    [operation addExecutionBlock:^{
+        
+        if([weakOperation isCancelled]) {
+            return;
+        }
         
         NSString *imagePath = [RemoteImageView pathForURL:imageURL 
                                                  size:_resizeImage ? CGSizeMake(self.frame.size.width, self.frame.size.height) : 
-                                                                     CGSizeZero];
-        
+                                                                     CGSizeZero]; 
         UIImage *resultImage = [UIImage imageWithContentsOfFile:imagePath];
         
         if(resultImage) {
             [self announceSuccess:resultImage forURL:imageURL];
             return;
         }
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [self startActivityIndicator];
-        });
         
         NSURLRequest *request = [NSURLRequest requestWithURL:imageURL cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60.0];
         NSURLResponse *response;
@@ -179,7 +197,10 @@ static UIImage *_globalDefaultImage;
             [self announceSuccess:resultImage forURL:imageURL];
             [self cacheImage:resultImage forURL:imageURL];
         }
-    });
+    }];
+    
+    _loadingOperation = operation;
+    [_imageLoadingQueue addOperation:_loadingOperation];
 }
 
 - (void)loadImageURL:(NSURL *)imageURL 
@@ -192,6 +213,11 @@ static UIImage *_globalDefaultImage;
     self.imageURL = imageURL;
 }
 
+- (void)cancel {
+    // YOON - Nur
+    [_loadingOperation cancel];
+}
+
 #pragma mark Result handling
 
 - (void)announceSuccess:(UIImage *)image forURL:(NSURL *)imageURL {
@@ -202,7 +228,13 @@ static UIImage *_globalDefaultImage;
     
     dispatch_async(dispatch_get_main_queue(), ^{
         
-        self.image = image;
+        //self.image = image;
+        if(!_imageLayer){
+            _imageLayer = [CALayer layer];
+            _imageLayer.frame = self.frame;
+            [self.layer addSublayer:_imageLayer];
+        }
+        _imageLayer.contents = (id)image.CGImage;
         
         if(_completeBlock)
             _completeBlock(image);
@@ -210,11 +242,13 @@ static UIImage *_globalDefaultImage;
         [self stopActivityIndicator];
         
         if(_animate) {
-            self.alpha = 0;
-            [UIView animateWithDuration:0.2 animations:^(){
-                self.alpha = 1.0f;
-            }];
+            CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"opacity"];
+            animation.fromValue = [NSNumber numberWithDouble:0.0];
+            animation.toValue = [NSNumber numberWithDouble:1.0];
+            animation.duration = 0.2;
+            [_imageLayer addAnimation:animation forKey:@"fadeIn"];
         }
+        
     });
 }
 
@@ -241,17 +275,16 @@ static UIImage *_globalDefaultImage;
 #pragma mark ActivityIndicator
 
 - (void)startActivityIndicator {
-    
-    if(_showActivityIndicator) {
+
+    if(_showActivityIndicator && _activityIndicator.hidden == YES) {
         _activityIndicator.hidden = NO;
         _activityIndicator.activityIndicatorViewStyle = _activityIndicatorStyle;
         [_activityIndicator startAnimating];
     }
-    
 }
 
 - (void)stopActivityIndicator {
-    
+
     [_activityIndicator stopAnimating];
 }
 
@@ -334,6 +367,13 @@ static UIImage *_globalDefaultImage;
 +(UIImage *)defaultGlobalImage  {
     
     return _globalDefaultImage;
+}
+
+#pragma mark cancelAll
+
++ (void)cancelAll {
+    
+    [_imageLoadingQueue cancelAllOperations];
 }
 
 @end

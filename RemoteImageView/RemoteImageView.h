@@ -60,11 +60,24 @@ typedef void (^imageResizeBlock_t)(UIImage *inputImage, UIImage **outputImage);
       withErrorBlock:(imageLoadErrorBlock_t)errorBlock;
 
 /**
+ Cancels current request operation (if not finished)
+ */
+- (void)cancel;
+
+/**
  Cleans out the disk cache directory. This will remove ALL images loaded with RemoteImageView
  */
 + (void) clearDiskCache;
 
+/**
+ Set / Get Default UIImage, used for all RemoteImageView instances when an request failes or result is not a valid image
+ */
 + (UIImage *)defaultGlobalImage;
 + (void)setDefaultGlobalImage:(UIImage *)image;
+
+/**
+ Cancels all operations from the current queue (all RemoteImageView instances available)
+ */
++ (void)cancelAll;
 
 @end
