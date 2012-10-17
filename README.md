@@ -31,6 +31,10 @@ This will create an `UIImageView` component and start loading the url right away
 #Options
 * **resizeImage (BOOL)** - default `YES`. If set to `NO` the image will not be resized and cropped 
 * **animate (BOOL)** - default `YES`. Animates the alpha of the image from 0 to 1 on load
+* **ignoreAnimateOnCache (BOOL)** - default `NO`. Doesn't run the display animation if image data comes from cache (example : in a `UITableView` when scrolling)
+* **CacheMode (RICacheMode)** - default `RIDiskCacheMode` 
+	* `RIDiskCacheMode` - caches all images on disk and loads them from disk on subsequent requests. Cache is persisted between application sessions
+	* `RIURLCacheMode` - uses default `NSURLCache` for caching. Cache is not persisted between application sessions.
 * **showActivityIndicator (BOOL)** - default `YES`. Shows an centered activity indicator while URL is loading. Conforms to `activityIndicatorStyle` property.
 * **activityIndicatorStyle (UIActivityIndicatorViewStyle)** - default `UIActivityIndicatorViewStyleGray`. Style to use for activity indicator shown when `showActivityIndicator` is set to `YES` and image is loading.
 
@@ -73,6 +77,27 @@ You can invalidate the disk cache by calling :
 	
 	[RemoteImageView clearDiskCache];
 
+#Cancel loading
+You can cancel loading for a specific `RemoteImageView` instance by calling the instance method `cancel` : 
+    
+    [myImageView cancel];
+    
+Or you can cancel all loading operations in all active `RemoteImageView` instances by calling the class method `cancelAll` :
+ 
+	[RemoteImageView cancelAll];
+	
+
+#Default fallback image
+
+If you want to use a default fallback image for requests that have failed you can set it using the `setDefaultGlobalImage:` class method :
+
+	[RemoteImageView setDefaultGlobalImage:[UIImage imageNamed:@"404"]];
+	
+You can get the default global image by using the `defaultGlobalImage` class method : 
+
+	UIImage *defaultImage = [RemoteImageView defaultGlobalImage];
+
+
 #Custom Image Resizing
 You can fully customize the loaded image before displaying it by using the `imageResizeBlock` property. If the property is not set the default image resize mode is used (scale, crop and center). 
 
@@ -90,8 +115,6 @@ Example (let's say you have an `UIImage` category that implements the `resizedIm
 	
 
 #TODO 
-* cancel functionality
-* in-memory cache support
 * smarter disk caching support (follow cache headers, cache large image as well)
 * configurable image resize modes
 * ...
