@@ -32,6 +32,11 @@
 
 #import <UIKit/UIKit.h>
 
+typedef enum {
+    RIDiskCacheMode,
+    RIURLCacheMode
+} RICacheMode;
+
 typedef void (^imageLoadCompleteBlock_t)(UIImage *image);
 typedef void (^imageLoadErrorBlock_t)(NSError *error);
 typedef void (^imageResizeBlock_t)(UIImage *inputImage, UIImage **outputImage);
@@ -44,6 +49,7 @@ typedef void (^imageResizeBlock_t)(UIImage *inputImage, UIImage **outputImage);
 @property (nonatomic, assign) BOOL animate;
 @property (nonatomic, assign) BOOL resizeImage;
 @property (nonatomic, assign) BOOL ignoreAnimateOnCache;
+@property (nonatomic, assign) RICacheMode cacheMode;
 
 @property (nonatomic, strong) imageLoadCompleteBlock_t completeBlock;
 @property (nonatomic, strong) imageLoadErrorBlock_t errorBlock;
