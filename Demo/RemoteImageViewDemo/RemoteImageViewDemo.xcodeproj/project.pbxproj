@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3A26B76A162ECD2000860C7B /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 3A26B769162ECD2000860C7B /* Default-568h@2x.png */; };
 		3A3DD710156E248800CD29B0 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3A3DD70F156E248800CD29B0 /* UIKit.framework */; };
 		3A3DD712156E248800CD29B0 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3A3DD711156E248800CD29B0 /* Foundation.framework */; };
 		3A3DD714156E248800CD29B0 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3A3DD713156E248800CD29B0 /* CoreGraphics.framework */; };
@@ -25,6 +26,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		3A26B769162ECD2000860C7B /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
 		3A3DD70B156E248800CD29B0 /* RemoteImageViewDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RemoteImageViewDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3A3DD70F156E248800CD29B0 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		3A3DD711156E248800CD29B0 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -66,6 +68,7 @@
 		3A3DD700156E248700CD29B0 = {
 			isa = PBXGroup;
 			children = (
+				3A26B769162ECD2000860C7B /* Default-568h@2x.png */,
 				3A3DD715156E248800CD29B0 /* RemoteImageViewDemo */,
 				3A3DD70E156E248800CD29B0 /* Frameworks */,
 				3A3DD70C156E248800CD29B0 /* Products */,
@@ -189,6 +192,7 @@
 				3A3DD72E156E248800CD29B0 /* second@2x.png in Resources */,
 				3A3DD731156E248800CD29B0 /* FirstViewController.xib in Resources */,
 				3A3DD734156E248800CD29B0 /* SecondViewController.xib in Resources */,
+				3A26B76A162ECD2000860C7B /* Default-568h@2x.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

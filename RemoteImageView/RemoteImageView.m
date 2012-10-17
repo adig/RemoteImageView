@@ -31,7 +31,6 @@
 
 #import "RemoteImageView.h"
 #import <CommonCrypto/CommonHMAC.h>
-#import <QuartzCore/QuartzCore.h>
 
 
 #define UIViewAutoresizingFlexibleMargins           \
@@ -68,6 +67,7 @@ static NSOperationQueue *_imageLoadingQueue;
 @synthesize completeBlock = _completeBlock;
 @synthesize errorBlock = _errorBlock;
 @synthesize imageResizeBlock = _imageResizeBlock;
+@synthesize ignoreAnimateOnCache = _ignoreAnimateOnCache;
 
 + (void)initialize {
   
@@ -106,6 +106,7 @@ static NSOperationQueue *_imageLoadingQueue;
     _animate = YES;
     _resizeImage = YES;
     _showActivityIndicator = YES;
+    _ignoreAnimateOnCache = NO;
     _activityIndicatorStyle = UIActivityIndicatorViewStyleGray;
     self.autoresizesSubviews = YES;
     
@@ -134,7 +135,6 @@ static NSOperationQueue *_imageLoadingQueue;
     [self cancel];
     
     self.image = nil;
-    _imageLayer.contents = nil;
     _imageURL = imageURL;
     
     if(!imageURL) return;
@@ -155,7 +155,8 @@ static NSOperationQueue *_imageLoadingQueue;
         UIImage *resultImage = [UIImage imageWithContentsOfFile:imagePath];
         
         if(resultImage) {
-            [self announceSuccess:resultImage forURL:imageURL];
+            
+            [self announceSuccess:resultImage forURL:imageURL fromCache:YES];            
             return;
         }
         
@@ -194,7 +195,7 @@ static NSOperationQueue *_imageLoadingQueue;
                 resultImage = resizedImage;
             } 
             
-            [self announceSuccess:resultImage forURL:imageURL];
+            [self announceSuccess:resultImage forURL:imageURL fromCache:NO];
             [self cacheImage:resultImage forURL:imageURL];
         }
     }];
@@ -214,13 +215,13 @@ static NSOperationQueue *_imageLoadingQueue;
 }
 
 - (void)cancel {
-    // YOON - Nur
+    
     [_loadingOperation cancel];
 }
 
 #pragma mark Result handling
 
-- (void)announceSuccess:(UIImage *)image forURL:(NSURL *)imageURL {
+- (void)announceSuccess:(UIImage *)image forURL:(NSURL *)imageURL fromCache:(BOOL)fromCache {
     
     if(imageURL != _imageURL) {
         return;
@@ -228,25 +229,18 @@ static NSOperationQueue *_imageLoadingQueue;
     
     dispatch_async(dispatch_get_main_queue(), ^{
         
-        //self.image = image;
-        if(!_imageLayer){
-            _imageLayer = [CALayer layer];
-            _imageLayer.frame = self.frame;
-            [self.layer addSublayer:_imageLayer];
-        }
-        _imageLayer.contents = (id)image.CGImage;
+        self.image = image;
         
         if(_completeBlock)
             _completeBlock(image);
         
         [self stopActivityIndicator];
         
-        if(_animate) {
-            CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"opacity"];
-            animation.fromValue = [NSNumber numberWithDouble:0.0];
-            animation.toValue = [NSNumber numberWithDouble:1.0];
-            animation.duration = 0.2;
-            [_imageLayer addAnimation:animation forKey:@"fadeIn"];
+        if(_animate && (!fromCache || (fromCache && !_ignoreAnimateOnCache))) {
+            self.alpha = 0;
+            [UIView animateWithDuration:0.2 animations:^(){
+                self.alpha = 1.0f;
+            }];
         }
         
     });

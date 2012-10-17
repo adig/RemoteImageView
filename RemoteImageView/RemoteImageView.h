@@ -43,10 +43,12 @@ typedef void (^imageResizeBlock_t)(UIImage *inputImage, UIImage **outputImage);
 @property (nonatomic, assign) UIActivityIndicatorViewStyle activityIndicatorStyle;
 @property (nonatomic, assign) BOOL animate;
 @property (nonatomic, assign) BOOL resizeImage;
+@property (nonatomic, assign) BOOL ignoreAnimateOnCache;
 
 @property (nonatomic, strong) imageLoadCompleteBlock_t completeBlock;
 @property (nonatomic, strong) imageLoadErrorBlock_t errorBlock;
 @property (nonatomic, strong) imageResizeBlock_t imageResizeBlock;
+
 
 
 /**
