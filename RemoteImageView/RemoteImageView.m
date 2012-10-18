@@ -219,8 +219,6 @@ static NSOperationQueue *_imageLoadingQueue;
     
     if(_resizeImage) {
         
-        UIImage *resizedImage;
-        
         if(_imageResizeBlock) {
             
             _imageResizeBlock(resizedImage, &resizedImage);
