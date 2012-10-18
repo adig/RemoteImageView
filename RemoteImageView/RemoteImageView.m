@@ -336,6 +336,9 @@ static NSOperationQueue *_imageLoadingQueue;
 
 + (NSString *) pathForURL:(NSURL *)url size:(CGSize)size {
     
+    if(!url)
+        return nil;
+    
     NSString *urlString = [url absoluteString];
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSString *path = [RemoteImageView cacheDirectoryPath];
@@ -348,7 +351,7 @@ static NSOperationQueue *_imageLoadingQueue;
                                      error:nil];
     }
     
-    if ([[urlString substringFromIndex:[urlString length]-1] isEqualToString:@"/"]) {
+    if (urlString.length > 0 && [[urlString substringFromIndex:[urlString length]-1] isEqualToString:@"/"]) {
         urlString = [urlString substringToIndex:[urlString length]-1];
     }
     
