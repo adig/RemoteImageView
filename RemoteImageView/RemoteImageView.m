@@ -57,6 +57,7 @@
 
 static UIImage *_globalDefaultImage;
 static NSOperationQueue *_imageLoadingQueue;
+static NSCache *_imageCache;
 
 @implementation RemoteImageView
 
@@ -75,7 +76,8 @@ static NSOperationQueue *_imageLoadingQueue;
   
     _imageLoadingQueue = [[NSOperationQueue alloc] init];
     _imageLoadingQueue.maxConcurrentOperationCount = 20;
-    
+    _imageCache = [[NSCache alloc] init];
+    _imageCache.name = @"RemoteImageView_imageCache";
 }
 
 - (id)init {
@@ -140,6 +142,9 @@ static NSOperationQueue *_imageLoadingQueue;
     [self cancel];
     
     self.image = nil;
+    
+    imageURL = [self parseImageURL:imageURL];
+    
     _imageURL = imageURL;
     
     if(!imageURL) return;
@@ -165,7 +170,7 @@ static NSOperationQueue *_imageLoadingQueue;
         }
         
         NSURLRequest *request = [NSURLRequest requestWithURL:imageURL
-                                                 cachePolicy:_cacheMode == RIDiskCacheMode ? NSURLRequestReloadIgnoringCacheData :
+                                                 cachePolicy:_cacheMode != RIDiskCacheMode ? NSURLRequestReloadIgnoringCacheData :
                                                                                              NSURLRequestReturnCacheDataElseLoad
                                              timeoutInterval:60.0];
         NSURLResponse *response;
@@ -218,6 +223,8 @@ static NSOperationQueue *_imageLoadingQueue;
     UIImage *resizedImage = image;
     
     if(_resizeImage) {
+        
+        UIImage *resizedImage;
         
         if(_imageResizeBlock) {
             
@@ -275,9 +282,20 @@ static NSOperationQueue *_imageLoadingQueue;
             self.image = _globalDefaultImage;
         }
         
-        if(_errorBlock)  
+        if(_errorBlock)
             _errorBlock(error);
     });
+}
+
+- (NSURL *)parseImageURL:(NSURL *)imageURL {
+    
+    if(!imageURL) return imageURL;
+    
+    NSString *newURLString = [imageURL.absoluteString stringByReplacingOccurrencesOfString:@":width"
+                                                                                withString:[@(self.frame.size.width * [UIScreen mainScreen].scale) stringValue]];
+    newURLString = [newURLString stringByReplacingOccurrencesOfString:@":height"
+                                                                      withString:[@(self.frame.size.height * [UIScreen mainScreen].scale) stringValue]];
+    return [NSURL URLWithString:newURLString];
 }
 
 
@@ -293,7 +311,6 @@ static NSOperationQueue *_imageLoadingQueue;
 }
 
 - (void)stopActivityIndicator {
-
     [_activityIndicator stopAnimating];
 }
 
@@ -302,8 +319,10 @@ static NSOperationQueue *_imageLoadingQueue;
 
 - (void)cacheImage:(UIImage *)image forURL:(NSURL *)url {
     
+    CGSize imageSize = _resizeImage ? CGSizeMake(self.frame.size.width, self.frame.size.height) : CGSizeZero;
+    if(image) [_imageCache setObject:image forKey:[RemoteImageView pathForURL:url size:imageSize]];
+    
     if(_cacheMode == RIDiskCacheMode) {
-        CGSize imageSize = _resizeImage ? CGSizeMake(self.frame.size.width, self.frame.size.height) : CGSizeZero;
         NSString *imagePath = [RemoteImageView pathForURL:url size:imageSize];
         [UIImagePNGRepresentation(image) writeToFile:imagePath options:NSDataWritingAtomic error:nil];
     }
@@ -311,7 +330,9 @@ static NSOperationQueue *_imageLoadingQueue;
 
 - (UIImage *)getCachedImageForURL:(NSURL *)url size:(CGSize)size {
     
-    UIImage *resultImage;
+    UIImage *resultImage = [_imageCache objectForKey:[RemoteImageView pathForURL:url size:size]];
+    
+    if(resultImage) return resultImage;
     
     if(_cacheMode == RIDiskCacheMode) {
         
@@ -319,7 +340,7 @@ static NSOperationQueue *_imageLoadingQueue;
                                                      size:size];
         resultImage = [UIImage imageWithContentsOfFile:imagePath];
         
-    } else {
+    } else if(_cacheMode == RIURLCacheMode) {
         
         NSURLRequest *request = [NSURLRequest requestWithURL:url];
         NSCachedURLResponse *cachedResponse = [[NSURLCache sharedURLCache] cachedResponseForRequest:request];
@@ -331,13 +352,12 @@ static NSOperationQueue *_imageLoadingQueue;
         }
     }
     
+    if(resultImage) [_imageCache setObject:resultImage forKey:[RemoteImageView pathForURL:url size:size]];
+    
     return resultImage;
 }
 
 + (NSString *) pathForURL:(NSURL *)url size:(CGSize)size {
-    
-    if(!url)
-        return nil;
     
     NSString *urlString = [url absoluteString];
     NSFileManager *fileManager = [NSFileManager defaultManager];
@@ -351,7 +371,7 @@ static NSOperationQueue *_imageLoadingQueue;
                                      error:nil];
     }
     
-    if (urlString.length > 0 && [[urlString substringFromIndex:[urlString length]-1] isEqualToString:@"/"]) {
+    if ([[urlString substringFromIndex:[urlString length]-1] isEqualToString:@"/"]) {
         urlString = [urlString substringToIndex:[urlString length]-1];
     }
     
@@ -378,11 +398,11 @@ static NSOperationQueue *_imageLoadingQueue;
     return path;
 }
 
-+ (void) clearDiskCache {
++ (void)clearDiskCache_ {
     
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSString *path = [RemoteImageView cacheDirectoryPath];
-    NSDirectoryEnumerator* en = [fileManager enumeratorAtPath:path];    
+    NSDirectoryEnumerator* en = [fileManager enumeratorAtPath:path];
     NSError* err = nil;
     BOOL res;
     
@@ -391,8 +411,19 @@ static NSOperationQueue *_imageLoadingQueue;
         res = [fileManager removeItemAtPath:[path stringByAppendingPathComponent:file] error:&err];
         if (!res && err) {
             NSLog(@"error: %@", err);
-        } 
+        }
     }
+}
+
++ (void) clearDiskCache {
+    [RemoteImageView clearDiskCache_];
+}
+
++ (void) clearCache {
+    
+    [RemoteImageView clearDiskCache_];
+    [[NSURLCache sharedURLCache] removeAllCachedResponses];
+    [_imageCache removeAllObjects];
 }
 
 #pragma mark Global Default image
@@ -476,4 +507,3 @@ static NSOperationQueue *_imageLoadingQueue;
 }
 
 @end
-

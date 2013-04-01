@@ -34,7 +34,8 @@
 
 typedef enum {
     RIDiskCacheMode,
-    RIURLCacheMode
+    RIURLCacheMode,
+    RICacheModeNone
 } RICacheMode;
 
 typedef void (^imageLoadCompleteBlock_t)(UIImage *image);
@@ -56,7 +57,6 @@ typedef void (^imageResizeBlock_t)(UIImage *inputImage, UIImage **outputImage);
 @property (nonatomic, strong) imageResizeBlock_t imageResizeBlock;
 
 
-
 /**
  Starts loading the URL provided right away and calls the result blocks on finish
  
@@ -72,10 +72,20 @@ typedef void (^imageResizeBlock_t)(UIImage *inputImage, UIImage **outputImage);
  */
 - (void)cancel;
 
-/**
- Cleans out the disk cache directory. This will remove ALL images loaded with RemoteImageView
+/**  
+    Cleans out the disk cache directory. This will remove ALL images loaded with RemoteImageView
+    ! deprecated, use clearCache istead
  */
-+ (void) clearDiskCache;
++ (void)clearDiskCache DEPRECATED_ATTRIBUTE;
+
+
+/**
+ Cleans out all caches. This will remove ALL images loaded with RemoteImageView
+    - Disk cache
+    - NSURLCache
+    - in-memory NSCache
+ */
++ (void) clearCache;
 
 /**
  Set / Get Default UIImage, used for all RemoteImageView instances when an request failes or result is not a valid image

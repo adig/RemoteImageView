@@ -61,7 +61,7 @@
 
 -(IBAction)didTapClearCacheButton:(id)sender {
     
-    [RemoteImageView clearDiskCache];
+    [RemoteImageView clearCache];
 }
 
 - (void)loadImage:(NSURL *)imageURL {

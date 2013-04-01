@@ -35,6 +35,7 @@ This will create an `UIImageView` component and start loading the url right away
 * **CacheMode (RICacheMode)** - default `RIDiskCacheMode` 
 	* `RIDiskCacheMode` - caches all images on disk and loads them from disk on subsequent requests. Cache is persisted between application sessions
 	* `RIURLCacheMode` - uses default `NSURLCache` for caching. Cache is not persisted between application sessions.
+	* `RICacheModeNone` - uses in memory cache only (`NSCache`)
 * **showActivityIndicator (BOOL)** - default `YES`. Shows an centered activity indicator while URL is loading. Conforms to `activityIndicatorStyle` property.
 * **activityIndicatorStyle (UIActivityIndicatorViewStyle)** - default `UIActivityIndicatorViewStyleGray`. Style to use for activity indicator shown when `showActivityIndicator` is set to `YES` and image is loading.
 
@@ -72,10 +73,10 @@ For similar functionality you can use the following convenience method :
     [self.view addSubview:imageView];
     
 #Caching
-All images loaded by a **RemoteImageView** instance are saved in the `Cache` directory and loaded from there on subsequent requests. 
-You can invalidate the disk cache by calling : 
+All images loaded by a **RemoteImageView** instance are saved in the `NSCache` memory cache and either in the `NSURLCache` when using the **RIURLCacheMode** or the disk cache directory when using **RIDiskCacheMode**
+You can invalidate the cache by calling (this will clear all caches : disk / URL / memory ) : 
 	
-	[RemoteImageView clearDiskCache];
+	[RemoteImageView clearCache];
 
 #Cancel loading
 You can cancel loading for a specific `RemoteImageView` instance by calling the instance method `cancel` : 
@@ -116,5 +117,4 @@ Example (let's say you have an `UIImage` category that implements the `resizedIm
 
 #TODO 
 * smarter disk caching support (follow cache headers, cache large image as well)
-* configurable image resize modes
 * ...
