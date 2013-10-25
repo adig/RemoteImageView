@@ -220,21 +220,21 @@ static NSCache *_imageCache;
 
 - (UIImage *)getResizedImage:(UIImage *)image {
     
-    UIImage *resizedImage = image;
+    UIImage *resizedImage;
     
     if(_resizeImage) {
         
-        UIImage *resizedImage;
-        
         if(_imageResizeBlock) {
             
-            _imageResizeBlock(resizedImage, &resizedImage);
+            _imageResizeBlock(image, &resizedImage);
             
         } else {
-            resizedImage = [resizedImage imageByScalingAndCroppingForSize:CGSizeMake(self.frame.size.width,
+            resizedImage = [image imageByScalingAndCroppingForSize:CGSizeMake(self.frame.size.width,
                                                                                     self.frame.size.height)];
         }
         
+    } else {
+        resizedImage = image;
     }
     
     return resizedImage;
