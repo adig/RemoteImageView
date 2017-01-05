@@ -45,7 +45,7 @@
 
 @interface RemoteImageView(){
     UIActivityIndicatorView *_activityIndicator;
-    NSBlockOperation *_loadingOperation;
+    NSURLSessionDataTask *dataTask;
 }
 @end
 
@@ -56,7 +56,7 @@
 @end
 
 static UIImage *_globalDefaultImage;
-static NSOperationQueue *_imageLoadingQueue;
+static NSMutableArray *_imageLoadingQueue;
 static NSCache *_imageCache;
 
 @implementation RemoteImageView
@@ -72,10 +72,11 @@ static NSCache *_imageCache;
 @synthesize ignoreAnimateOnCache = _ignoreAnimateOnCache;
 @synthesize cacheMode = _cacheMode;
 
+NSURLSessionDataTask *dataTask = NULL;
+
 + (void)initialize {
   
-    _imageLoadingQueue = [[NSOperationQueue alloc] init];
-    _imageLoadingQueue.maxConcurrentOperationCount = 20;
+    _imageLoadingQueue = [[NSMutableArray alloc] init];
     _imageCache = [[NSCache alloc] init];
     _imageCache.name = @"RemoteImageView_imageCache";
 }
@@ -139,7 +140,9 @@ static NSCache *_imageCache;
 
 - (void)setImageURL:(NSURL *)imageURL {
     
-    [self cancel];
+    if (dataTask != NULL) {
+        [dataTask cancel];
+    }
     
     self.image = nil;
     
@@ -147,45 +150,38 @@ static NSCache *_imageCache;
     
     _imageURL = imageURL;
     
-    if(!imageURL) return;
+    if(!imageURL) {
+        return;
+    }
     
     [self startActivityIndicator];
     
-    NSBlockOperation *operation = [[NSBlockOperation alloc] init];
-    __unsafe_unretained NSBlockOperation *weakOperation = operation;
-    [operation addExecutionBlock:^{
+    CGSize imageSize =_resizeImage ? CGSizeMake(self.frame.size.width, self.frame.size.height) :
+    CGSizeZero;
+    UIImage *resultImage = [self getCachedImageForURL:imageURL size:imageSize];
+    
+    if(resultImage) {
         
-        if([weakOperation isCancelled]) {
-            return;
-        }
-        
-        CGSize imageSize =_resizeImage ? CGSizeMake(self.frame.size.width, self.frame.size.height) :
-                                        CGSizeZero;
-        UIImage *resultImage = [self getCachedImageForURL:imageURL size:imageSize];
-        
-        if(resultImage) {
-            
-            [self announceSuccess:resultImage forURL:imageURL fromCache:YES];            
-            return;
-        }
-        
-        NSURLRequest *request = [NSURLRequest requestWithURL:imageURL
-                                                 cachePolicy:_cacheMode != RIDiskCacheMode ? NSURLRequestReloadIgnoringCacheData :
-                                                                                             NSURLRequestReturnCacheDataElseLoad
-                                             timeoutInterval:60.0];
-        NSURLResponse *response;
-        NSError *error;
-        NSData *result = [NSURLConnection sendSynchronousRequest:request 
-                                               returningResponse:&response 
-                                                           error:&error];
-        
+        [self announceSuccess:resultImage forURL:imageURL fromCache:YES];
+        return;
+    }
+    
+    [_imageLoadingQueue addObject:self];
+    
+    NSURLRequest *request = [NSURLRequest requestWithURL:imageURL
+                                             cachePolicy:_cacheMode != RIDiskCacheMode ? NSURLRequestReloadIgnoringCacheData :
+                             NSURLRequestReturnCacheDataElseLoad
+                                         timeoutInterval:60.0];
+    
+    dataTask = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+
         if(error) {
             
             [self announceError:error forURL:imageURL];
             
         } else {
             
-            resultImage = [[UIImage alloc] initWithData:result];
+            UIImage *resultImage = [[UIImage alloc] initWithData:data];
             
             if(!resultImage && _globalDefaultImage) {
                 resultImage = _globalDefaultImage;
@@ -196,15 +192,16 @@ static NSCache *_imageCache;
             [self announceSuccess:resultImage forURL:imageURL fromCache:NO];
             
             [self cacheImage:resultImage forURL:imageURL];
+            [self cancel];
         }
+
     }];
     
-    _loadingOperation = operation;
-    [_imageLoadingQueue addOperation:_loadingOperation];
+    [dataTask resume];
 }
 
-- (void)loadImageURL:(NSURL *)imageURL 
-   withCompleteBlock:(imageLoadCompleteBlock_t)completeBlock 
+- (void)loadImageURL:(NSURL *)imageURL
+   withCompleteBlock:(imageLoadCompleteBlock_t)completeBlock
       withErrorBlock:(imageLoadErrorBlock_t)errorBlock {
     
     self.completeBlock = completeBlock;
@@ -214,8 +211,13 @@ static NSCache *_imageCache;
 }
 
 - (void)cancel {
-    
-    [_loadingOperation cancel];
+    if (dataTask != NULL) {
+        [dataTask cancel];
+        NSUInteger index = [_imageLoadingQueue indexOfObject:self];
+        if (index != NSNotFound) {
+            [_imageLoadingQueue removeObjectAtIndex:index];
+        }
+    }
 }
 
 - (UIImage *)getResizedImage:(UIImage *)image {
@@ -410,7 +412,7 @@ static NSCache *_imageCache;
     while (file = [en nextObject]) {
         res = [fileManager removeItemAtPath:[path stringByAppendingPathComponent:file] error:&err];
         if (!res && err) {
-            NSLog(@"error: %@", err);
+            // NSLog(@"error: %@", err);
         }
     }
 }
@@ -441,8 +443,9 @@ static NSCache *_imageCache;
 #pragma mark cancelAll
 
 + (void)cancelAll {
-    
-    [_imageLoadingQueue cancelAllOperations];
+    for (RemoteImageView* aView in _imageLoadingQueue) {
+        [aView cancel];
+    }
 }
 
 @end
@@ -499,7 +502,7 @@ static NSCache *_imageCache;
     
     newImage = UIGraphicsGetImageFromCurrentImageContext();
     if(newImage == nil) 
-        NSLog(@"could not scale image");
+        // NSLog(@"could not scale image");
     
     //pop the context to get back to the default
     UIGraphicsEndImageContext();
