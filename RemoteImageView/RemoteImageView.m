@@ -211,11 +211,21 @@ NSURLSessionDataTask *dataTask = NULL;
 }
 
 - (void)cancel {
+    [self cancelAndRemove:YES];
+}
+
+- (void)cancelAndRemove:(BOOL) shouldRemove {
     if (dataTask != NULL) {
         [dataTask cancel];
-        NSUInteger index = [_imageLoadingQueue indexOfObject:self];
-        if (index != NSNotFound) {
-            [_imageLoadingQueue removeObjectAtIndex:index];
+        if (shouldRemove == YES) {
+            [_loadingQueueLock lock];
+            NSUInteger index = [_imageLoadingQueue indexOfObject:self];
+            [_loadingQueueLock unlock];
+            if (index != NSNotFound) {
+                [_loadingQueueLock lock];
+                [_imageLoadingQueue removeObjectAtIndex:index];
+                [_loadingQueueLock unlock];
+            }
         }
     }
 }
@@ -444,8 +454,9 @@ NSURLSessionDataTask *dataTask = NULL;
 
 + (void)cancelAll {
     for (RemoteImageView* aView in _imageLoadingQueue) {
-        [aView cancel];
+        [aView cancelAndRemove:NO];
     }
+    [_imageLoadingQueue removeAllObjects];
 }
 
 @end
