@@ -170,7 +170,9 @@ NSURLSessionDataTask *dataTask = NULL;
         return;
     }
     
+    [_loadingQueueLock lock];
     [_imageLoadingQueue addObject:self];
+    [_loadingQueueLock unlock];
     
     NSURLRequest *request = [NSURLRequest requestWithURL:imageURL
                                              cachePolicy:_cacheMode != RIDiskCacheMode ? NSURLRequestReloadIgnoringCacheData :
@@ -335,8 +337,13 @@ NSURLSessionDataTask *dataTask = NULL;
 
 - (void)cacheImage:(UIImage *)image forURL:(NSURL *)url {
     
+    if (image == nil) {
+        return;
+    }
+    
     CGSize imageSize = _resizeImage ? CGSizeMake(self.frame.size.width, self.frame.size.height) : CGSizeZero;
-    if(image) [_imageCache setObject:image forKey:[RemoteImageView pathForURL:url size:imageSize]];
+    
+    [_imageCache setObject:image forKey:[RemoteImageView pathForURL:url size:imageSize]];
     
     if(_cacheMode == RIDiskCacheMode) {
         NSString *imagePath = [RemoteImageView pathForURL:url size:imageSize];
@@ -457,10 +464,12 @@ NSURLSessionDataTask *dataTask = NULL;
 #pragma mark cancelAll
 
 + (void)cancelAll {
+    [_loadingQueueLock lock];
     for (RemoteImageView* aView in _imageLoadingQueue) {
         [aView cancelAndRemove:NO];
     }
     [_imageLoadingQueue removeAllObjects];
+    [_loadingQueueLock unlock];
 }
 
 @end
