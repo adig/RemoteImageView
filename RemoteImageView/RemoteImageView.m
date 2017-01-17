@@ -58,6 +58,7 @@
 static UIImage *_globalDefaultImage;
 static NSMutableArray *_imageLoadingQueue;
 static NSCache *_imageCache;
+static NSLock *_loadingQueueLock;
 
 @implementation RemoteImageView
 
@@ -79,6 +80,9 @@ NSURLSessionDataTask *dataTask = NULL;
     _imageLoadingQueue = [[NSMutableArray alloc] init];
     _imageCache = [[NSCache alloc] init];
     _imageCache.name = @"RemoteImageView_imageCache";
+    _loadingQueueLock = [[NSLock alloc] init];
+    _loadingQueueLock.name = @"LoadingQueueLock";
+    
 }
 
 - (id)init {
